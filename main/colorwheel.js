@@ -42,6 +42,59 @@
 			result = '#' + rHex + gHex + bHex;
 		return result;
 	};
+	
+	ColorWheel.prototype.rgbToHsl = function(components){
+		var rL = components[0] / 255, gL = components[1] / 255, bL = components[2] / 255,
+			max = Math.max(rL, gL, bL), min = Math.min(rL, gL, bL),
+			h, s, l = (max + min) / 2;
+		if (max === min){
+			h = s = 0;
+		} else {
+			var dist = max - min;
+			s = l > 0.5 ? dist / (2 - max - min) : dist / (max + min);
+			
+			switch (max){
+				case rL: h = (gL - bL) / dist + (gL < bL ? 6 : 0); break;
+				case gL: h = (bL - rL) / dist + 2; break;
+				case bL: h = (rL - gL) / dist + 4; break;
+			}
+			
+			h = h / 6;
+		}
+		
+		return [h, s, l];
+	};
+	
+	ColorWheel.prototype.hslToRgb = function(components){
+		var r, g, b, h = components[0] / 360, s = components[1] / 100, l = components[2] / 100;
+		if (s === 0){
+			r = g = b = l;
+		} else {
+			function hueToRgb(p, q, t){
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1/6) return p + (q - p) * 6 * t;
+				if (t < 1/2) return q;
+				if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			}
+			
+			var q = l < 0.5 ? l * (1 + s) : l + s - l * s,
+				p = 2 * l - q;
+			
+			r = hueToRgb(p, q, h + 1/3);
+			g = hueToRgb(p, q, h);
+			b = hueToRgb(p, q, h - 1/3);
+		}
+		
+		return [r, g, b].map(function(component){ return Math.round(component * 255); });
+	};
+	
+	ColorWheel.prototype.hslToHex = function(components){
+		var rgb = this.hslToRgb(components),
+			hex = this.rgbToHex(rgb);
+		return hex;
+	};
 
 	ColorWheel.prototype.hexToRgb = function(hex){
 		var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
